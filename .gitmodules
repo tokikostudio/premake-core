@@ -1,0 +1,3 @@
+[submodule "modules/ecc"]
+	path = modules/ecc
+	url = git@github.com:tokikostudio/premake-ecc.git
