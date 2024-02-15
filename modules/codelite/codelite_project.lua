@@ -133,7 +133,7 @@
 				for cfg in project.eachconfig(prj) do
 					local cfgname = codelite.cfgname(cfg)
 					local fcfg = p.fileconfig.getconfig(node, cfg)
-					if not fcfg or fcfg.flags.ExcludeFromBuild then
+					if not fcfg or fcfg.flags.ExcludeFromBuild or fcfg.buildaction == "None" then
 						table.insert(excludesFromBuild, cfgname)
 					end
 				end
@@ -405,6 +405,15 @@
 		local dependencies = {}
 		local makefilerules = {}
 		local function addrule(dependencies, makefilerules, config, filename)
+			if config.buildaction == "Copy" and filename ~= "" then
+				local output = project.getrelative(cfg.workspace, path.join(cfg.targetdir, config.name))
+				local create_directory_command = '\t@$(MakeDirCommand) $(@D)\n'
+				local command = '\t' .. os.translateCommands('{COPYFILE} "' .. filename .. '" "' .. output ..'"') .. '\n'
+
+				table.insert(makefilerules, output .. ": " .. filename .. '\n' .. create_directory_command .. command)
+				table.insert(dependencies, output)
+				return true
+			end
 			if #config.buildcommands == 0 or #config.buildoutputs == 0 then
 				return false
 			end
