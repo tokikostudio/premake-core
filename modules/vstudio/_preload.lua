@@ -217,6 +217,18 @@
 	}
 
 	p.api.register {
+		name = "clangtidy",
+		scope = "config",
+		kind = "boolean"
+	}
+
+	p.api.register {
+		name = "runcodeanalysis",
+		scope = "config",
+		kind = "boolean"
+	}
+
+	p.api.register {
 		name = "vsprops",
 		scope = "config",
 		kind = "list:table",
@@ -263,6 +275,22 @@
 		name = "remoteprojectdir",
 		scope = "config",
 		kind = "string",
+	}
+
+	-- Directory of LLVM install
+	p.api.register {
+		name = "llvmdir",
+		scope = "config",
+		kind = "directory",
+		tokens = "true",
+	}
+
+	-- Version of LLVM Install
+	p.api.register {
+		name = "llvmversion",
+		scope = "config",
+		kind = "string",
+		tokens = "true",
 	}
 
 --

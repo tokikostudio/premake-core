@@ -224,6 +224,7 @@
 			return {
 				m.configurationType,
 				m.platformToolset,
+				m.llvmTools,
 				m.toolsVersion,
 			}
 		else
@@ -238,6 +239,7 @@
 				m.enableUnityBuild,
 				m.sanitizers,
 				m.toolsVersion,
+				m.llvmTools,
 				m.wholeProgramOptimization,
 				m.nmakeOutDirs,
 				m.windowsSDKDesktopARMSupport,
@@ -322,6 +324,8 @@
 				m.extensionsToDeleteOnClean,
 				m.executablePath,
 				m.allModulesPublic,
+				m.clangtidy,
+				m.runcodeanalysis
 			}
 		end
 	end
@@ -961,6 +965,8 @@
 			m.objectFileName,
 			m.clCompilePreprocessorDefinitions,
 			m.clCompileUndefinePreprocessorDefinitions,
+			m.languageStandard,
+			m.languageStandardC,
 			m.optimization,
 			m.forceIncludes,
 			m.forceUsings,
@@ -1356,6 +1362,10 @@
 				if fcfg.buildaction then
 					return m.categories[fcfg.buildaction] or m.categories.None
 				end
+
+				if fcfg.compileas ~= nil and fcfg.compileas ~= "Default" then
+					return m.categories.ClCompile
+				end
 			end
 		end
 
@@ -1483,7 +1493,7 @@
 
 				local contents = p.capture(function ()
 					p.push()
-					p.callArray(fileFunc, cfg, file)
+					p.callArray(fileFunc, nil, file)
 					m.conditionalElements = {}
 					for cfg in project.eachconfig(prj) do
 						local fcfg = fileconfig.getconfig(file, cfg)
@@ -1728,27 +1738,27 @@
 	end
 
 
-	function m.languageStandard(cfg)
+	function m.languageStandard(cfg, condition)
 		if _ACTION >= "vs2017" then
 			if (cfg.cppdialect == "C++14") then
-				m.element("LanguageStandard", nil, 'stdcpp14')
+				m.element("LanguageStandard", condition, 'stdcpp14')
 			elseif (cfg.cppdialect == "C++17") then
-				m.element("LanguageStandard", nil, 'stdcpp17')
+				m.element("LanguageStandard", condition, 'stdcpp17')
 			elseif (cfg.cppdialect == "C++20") then
-				m.element("LanguageStandard", nil, iif(_ACTION == "vs2017", 'stdcpplatest', 'stdcpp20'))
+				m.element("LanguageStandard", condition, iif(_ACTION == "vs2017", 'stdcpplatest', 'stdcpp20'))
 			elseif (cfg.cppdialect == "C++latest") then
-				m.element("LanguageStandard", nil, 'stdcpplatest')
+				m.element("LanguageStandard", condition, 'stdcpplatest')
 			end
 		end
 	end
 
 
-	function m.languageStandardC(cfg)
+	function m.languageStandardC(cfg, condition)
 		if _ACTION >= "vs2019" then
 			if (cfg.cdialect == "C11") then
-				m.element("LanguageStandard_C", nil, 'stdc11')
+				m.element("LanguageStandard_C", condition, 'stdc11')
 			elseif (cfg.cdialect == "C17") then
-				m.element("LanguageStandard_C", nil, 'stdc17')
+				m.element("LanguageStandard_C", condition, 'stdc17')
 			end
 		end
 	end
@@ -2776,6 +2786,19 @@
 		end
 	end
 
+	function m.llvmTools(cfg)
+		local llvmdir = cfg.llvmdir
+		local llvmversion = cfg.llvmversion
+
+		if llvmdir and _ACTION >= "vs2019" then
+			m.element("LLVMInstallDir", nil, vstudio.path(cfg, llvmdir))
+		end
+		
+		if llvmversion and _ACTION >= "vs2019" then
+			m.element("LLVMToolsVersion", nil, llvmversion)
+		end
+	end
+
 	function m.enableUnityBuild(cfg)
 		if _ACTION >= "vs2017" and cfg.enableunitybuild then
 			m.element("EnableUnitySupport", nil, iif(cfg.enableunitybuild == "On", "true", "false"))
@@ -3036,6 +3059,17 @@
 		m.element("TargetName", nil, "%s%s", cfg.buildtarget.prefix, cfg.buildtarget.basename)
 	end
 
+	function m.clangtidy(cfg)
+		if _ACTION >= "vs2019" and cfg.clangtidy ~= nil then
+			m.element("EnableClangTidyCodeAnalysis", nil, iif(cfg.clangtidy, "true", "false"))
+		end
+	end
+
+	function m.runcodeanalysis(cfg)
+		if _ACTION >= "vs2019" and cfg.runcodeanalysis ~= nil then
+			m.element("RunCodeAnalysis", nil, iif(cfg.runcodeanalysis, "true", "false"))
+		end
+	end
 
 	function m.latestTargetPlatformVersion(prj)
 		-- See https://developercommunity.visualstudio.com/content/problem/140294/windowstargetplatformversion-makes-it-impossible-t.html
